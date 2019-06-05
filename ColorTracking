@@ -1,0 +1,158 @@
+import processing.video.*;
+Capture cap;
+
+PGraphics pg;
+
+color trackColorR;
+
+float threshold;
+
+PImage zei;
+PImage mei;
+PImage string;
+
+float x1 = 200;
+float x2=1200;
+float y1 =125;
+float y2=775;
+float x1speed = 5;
+float y1speed = 5;
+float x2speed =5;
+float y2speed =5;
+
+void setup() {
+  //size(800, 800);
+  fullScreen();
+  
+  cap = new Capture(this, 640, 480);
+  
+  cap.start(); 
+  
+  trackColorR = color(255, 0, 0);
+  
+  pg = createGraphics(640, 480);
+  
+  zei = loadImage("zei.png");
+  mei = loadImage("mei.png");
+  string = loadImage("string.png");
+}
+
+float distSq(float x1, float y1, float z1, float x2, float y2, float z2) {
+  float d = (x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) +(z2-z1)*(z2-z1);
+  return d;
+}
+
+void draw() {
+  if(cap.available() == true)
+  cap.read();
+  cap.loadPixels();
+  
+  threshold = 100;
+  
+  //background(102);
+  background(#000000);
+    //background line---------------------------
+  for(int i=201; i<1210; i=i+10){
+    strokeWeight(5); 
+    stroke(#2DFA7D);
+    line(i , 0, i, 900);
+  }
+  
+  //cicles on two sides-----------------------
+    strokeWeight(5);
+    stroke(#000000);
+    fill(#FF8EC5);
+    ellipse(x1, y1, 250, 250);
+    ellipse(x2, y2, 250, 250);
+
+    y1=y1+y1speed;
+    y2=y2-y2speed;
+ 
+    if(y1>=775){
+      y1speed=-y1speed;
+    }
+    else if (y1<=125){
+      y1speed = 5;
+    }
+    
+    if(y2>=775){
+      y2speed=5;
+    }
+    else if (y2<=125){
+      y2speed = -y2speed;
+    }
+    
+  //title rect
+  fill(#FFEE50);
+  rect(450, 145, 480, 80);
+
+  
+  //title text
+  //float q = map(y1, 125, 775, 450, 600);
+  image(string, 535, 155);
+  
+  //center shapes-----------------------------------
+  //camera rect
+  strokeWeight(5);
+  stroke(#000000);
+  fill(#4C67EA);
+  rect(380, 250, 640, 480);
+  
+  //upper triangle
+  float m = map(y1, 125, 775, 0, 255);
+  float n = map(y2, 125, 775, 0, 255);
+  fill(m, 215, 255);
+  triangle(445, 130, 551, 130, 498, 30);
+  fill(255, 131, n);
+  triangle(551, 130, 657, 130, 604, 30);
+  fill(177, 255, m);
+  triangle(657, 130, 763, 130, 710, 30);
+  
+  //lower triangle
+  fill(255, 131, n);
+  triangle(698, 760, 804, 760, 751, 860);
+  fill(177, 255, m);
+  triangle(804, 760, 910, 760, 857, 860);
+  fill(m, 215, 255);
+  triangle(910, 760, 1016, 760, 963, 860);
+
+//draw cicle
+  pg.beginDraw();
+  for (int x = 0; x < cap.width; x++ ) {
+      for (int y = 0; y < cap.height; y++ ) {
+        int loc = x + y * cap.width;
+        // What is current color
+        color currentColor = cap.pixels[loc];
+        float r1 = red(currentColor);
+        float g1 = green(currentColor);
+        float b1 = blue(currentColor);
+        float r2 = red(trackColorR);
+        float g2 = green(trackColorR);
+        float b2 = blue(trackColorR);
+  
+        float d = distSq(r1, g1, b1, r2, g2, b2); 
+        
+        if (d < threshold*threshold) {
+          pg.stroke(255);
+          pg.ellipse(x, y, 80, 80);
+          pg.smooth();
+          
+          image(zei, x1-70, y1-80);
+          image(mei, x2-100, y2-50);
+        }        
+      }
+    }
+    pg.endDraw();
+ //making mask: cam is upper layer 
+  cap.mask(pg);
+  image(cap, 380, 250);   
+}
+
+void mousePressed() {
+  pg.beginDraw(); 
+  pg.clear();
+  pg.endDraw(); 
+  
+  cap.mask(pg);
+  image(cap, 380, 250);
+}
